@@ -289,6 +289,11 @@ message Settings {
   optional OpenRouterModelInfo act_mode_cline_pass_model_info = 186;
   optional bool cloud_sessions_enabled = 188;
   optional string open_telemetry_traces_exporter = 189;
+  optional bool cores3_link_enabled = 190;
+  optional int32 cores3_link_port = 191;
+  optional string cores3_link_token = 192;
+  optional int32 cores3_link_question_timeout_ms = 193;
+  optional int32 cores3_link_match_threshold = 194;
 }
 
 message State {

@@ -287,6 +287,14 @@ const USER_SETTINGS_FIELDS = {
 	preferredLanguage: { default: "English" as string },
 	mode: { default: "act" as Mode },
 	backgroundEditEnabled: { default: false as boolean },
+	// M5Stack Core S3 remote link: a device on the same WiFi drives Cline by voice
+	// and shows the replies. The token is the only access control on the LAN port,
+	// so it must match `CLINE_TOKEN` in the firmware.
+	cores3LinkEnabled: { default: true as boolean },
+	cores3LinkPort: { default: 48901 as number },
+	cores3LinkToken: { default: "cline-m5" as string },
+	cores3LinkQuestionTimeoutMs: { default: 300000 as number },
+	cores3LinkMatchThreshold: { default: 0.5 as number },
 	optOutOfRemoteConfig: { default: false as boolean },
 	showFeatureTips: { default: false as boolean },
 

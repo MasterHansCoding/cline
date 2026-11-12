@@ -52,6 +52,7 @@ import { VscodeWebviewProvider } from "./hosts/vscode/VscodeWebviewProvider"
 import { exportVSCodeStorageToSharedFiles } from "./hosts/vscode/vscode-to-file-migration"
 import { ExtensionRegistryInfo } from "./registry"
 import { AuthService, LogoutReason } from "./sdk/auth-service"
+import { cores3Link } from "./services/cores3"
 import { telemetryService } from "./services/telemetry"
 import type { RolloutBundleActivation } from "./services/telemetry/rollout-metadata"
 import { LG_TASK_URI_PATH, SharedUriHandler, TASK_URI_PATH } from "./services/uri/SharedUriHandler"
@@ -90,6 +91,11 @@ export async function activate(context: vscode.ExtensionContext) {
 	// 4. Register services and perform common initialization
 	// IMPORTANT: Must be done after host provider is setup and migrations are complete
 	const webview = (await initialize(storageContext)) as VscodeWebviewProvider
+
+	// 4b. Start the M5Stack Core S3 link: it listens on the LAN, answers the
+	// device's discovery beacon and mirrors the agent. No panel is required - the
+	// controller attaches itself as soon as it is built.
+	void cores3Link.start()
 
 	// 5. Register services and commands specific to VS Code
 	// Initialize hook discovery cache for performance optimization
@@ -661,6 +667,8 @@ async function getBinaryLocation(name: string): Promise<string> {
 
 // This method is called when your extension is deactivated
 export async function deactivate() {
+	// Stop the device link first: no prompt may arrive while services tear down.
+	await cores3Link.stop()
 	// Dispose Non-VSCode-specific services
 	try {
 		await tearDown()

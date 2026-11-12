@@ -49,6 +49,7 @@ import { OcaAuthService } from "@/services/auth/oca/OcaAuthService"
 import { UrlContentFetcher } from "@/services/browser/UrlContentFetcher"
 import { CloudSessionsService } from "@/services/cloud/CloudSessionsService"
 import { isCloudSessionsFeatureAvailable, isCloudSessionsFeatureEnabled } from "@/services/cloud/cloudSessionsFeature"
+import { cores3Link } from "@/services/cores3"
 import { ClineError } from "@/services/error/ClineError"
 import { McpHub } from "@/services/mcp/McpHub"
 import { telemetryService } from "@/services/telemetry"
@@ -420,7 +421,16 @@ export class Controller {
 				return autoApprovalSettings ? isToolAutoApproved(request.toolName, autoApprovalSettings) : false
 			},
 			getCwd: () => this.lastKnownWorkspaceRoot,
+			// Questions are mirrored to the Core S3 when a device is connected; the
+			// IDE remains the source of truth for the answer.
+			onAskQuestion: (question, options) => cores3Link.askDevice(question, options),
 		})
+		// Mirror this controller to the M5Stack Core S3 link: it must be attached
+		// even when no session exists yet, so a prompt arriving from the device
+		// finds a live controller (or gets told to open the panel).
+		cores3Link.attachController(this)
+		this.turnStateTracker.onChange((state) => cores3Link.onTurnPhase(state))
+
 		this.sessions = new SdkSessionLifecycle({
 			mcpHub: this.mcpHub,
 			telemetry: this.sdkTelemetry.telemetry,

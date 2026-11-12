@@ -16,9 +16,21 @@ export class TurnStateTracker {
 	private phase: TurnPhase = "idle"
 	private anchorTs: number | undefined
 	private seq: number
+	private readonly listeners = new Set<(state: TurnState) => void>()
 
 	constructor(private readonly minter: MessageIdMinter) {
 		this.seq = minter.nextSeq()
+	}
+
+	/**
+	 * Observe phase changes. The Core S3 link mirrors them to the device, so the
+	 * agent's activity shows up remotely without any coordinator knowing about it.
+	 */
+	onChange(listener: (state: TurnState) => void): () => void {
+		this.listeners.add(listener)
+		return () => {
+			this.listeners.delete(listener)
+		}
 	}
 
 	/** Set the phase (and optional anchor message ts), advancing seq. No-op metadata if unchanged. */
@@ -26,6 +38,18 @@ export class TurnStateTracker {
 		this.phase = phase
 		this.anchorTs = anchorTs
 		this.seq = this.minter.nextSeq()
+
+		// Mirroring is best-effort: a failing listener must never break a turn.
+		if (this.listeners.size > 0) {
+			const snapshot = this.get()
+			for (const listener of this.listeners) {
+				try {
+					listener(snapshot)
+				} catch {
+					// ignored on purpose
+				}
+			}
+		}
 	}
 
 	/** Current immutable snapshot for inclusion in the state payload. */

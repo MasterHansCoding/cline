@@ -231,6 +231,12 @@
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
 			"label": "npm: watch:tsc",
+			// Sequence matters here: a `tsc --watch` started in parallel with the
+			// proto generation type-checks missing modules, and the resulting
+			// errors (implicit-any parameters in files consuming generated
+			// protos, e.g. github-url-utils.ts) stay reported for the whole
+			// session even after the protos land.
+			"dependsOrder": "sequence",
 			"dependsOn": [
 				"npm: protos"
 			],

@@ -69,6 +69,12 @@ export interface SdkInteractionCoordinatorOptions {
 	 * shown in tool-approval asks (display only). Optional for tests.
 	 */
 	getCwd?: () => string | undefined
+	/**
+	 * Mirror a question to a remote device (the Core S3 link) and resolve with the
+	 * option it chose, or undefined to leave the ask entirely to the IDE. The IDE
+	 * keeps the last word: whichever answer arrives first settles the question.
+	 */
+	onAskQuestion?: (question: string, options: readonly string[]) => Promise<string | undefined>
 }
 
 export class SdkInteractionCoordinator {
@@ -202,6 +208,19 @@ export class SdkInteractionCoordinator {
 			type: "status",
 			payload: { sessionId: this.options.getSessionId(), status: "running" },
 		})
+
+		// Mirror the question to the device. The IDE keeps the last word: an answer
+		// that arrives after the IDE already replied changes nothing.
+		if (this.options.onAskQuestion) {
+			void this.options
+				.onAskQuestion(question, options ?? [])
+				.then((choice) => {
+					if (choice !== undefined && this.pendingAskResolve === resolveAnswer) {
+						this.resolvePendingAskQuestion(choice)
+					}
+				})
+				.catch((error) => Logger.warn(`[SdkController] Remote question mirror failed: ${error}`))
+		}
 
 		void Promise.resolve()
 			.then(() => this.options.postStateToWebview())
